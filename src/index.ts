@@ -31,7 +31,7 @@ export class Bot extends DurableObject<Env> {
       try { body = await request.json() } catch { return Response.json({ error: 'invalid_request' }, { status: 400 }) }
       if (!/^55\d{10,11}$/.test(body.phone ?? '') || !body.text || body.text.length > 1500)
         return Response.json({ error: 'invalid_request' }, { status: 400 })
-      if (!this.socket || this.status.state !== 'connected') return Response.json({ error: 'not_connected' }, { status: 409 })
+      // Durable Objects podem hibernar entre requisições. Reabre a sessão salva automaticamente\n      // para que o envio não dependa da Central ou do navegador aberto.\n      if (!this.socket || this.status.state !== 'connected') {\n        try { await this.start(false) } catch { /* resposta abaixo informa o estado */ }\n      }\n      if (!this.socket || this.status.state !== 'connected') return Response.json({ error: 'not_connected' }, { status: 409 })
       try {
         await this.socket.sendMessage(`${body.phone}@s.whatsapp.net`, { text: body.text })
         return Response.json({ accepted: true })
